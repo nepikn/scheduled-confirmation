@@ -1,8 +1,9 @@
 "use strict";
 
+import sendConfirm from "./Confirm";
 import { setScriptArray, parseProp } from "./GasHelpers";
 
-export default class TimeTrigger {
+class TimeTrigger {
   triggerId;
   sourceId;
   time;
@@ -12,7 +13,7 @@ export default class TimeTrigger {
    * 也在 Script Properties 新增相關資料
    */
   constructor(sourceId: string, time = [15, 0]) {
-    this.triggerId = ScriptApp.newTrigger("sendConfirm")
+    this.triggerId = ScriptApp.newTrigger(handleTimeTrigger.name)
       .timeBased()
       .atHour(time[0])
       .nearMinute(time[1])
@@ -61,3 +62,13 @@ export default class TimeTrigger {
     );
   }
 }
+
+function handleTimeTrigger(e: GoogleAppsScript.Events.FormsOnFormSubmit) {
+  let sourceId = TimeTrigger.find(e.triggerUid)?.sourceId;
+
+  if (!sourceId) throw new Error(`No sourceId for trigger ${e.triggerUid}`);
+
+  sendConfirm(sourceId);
+}
+
+export default TimeTrigger;

@@ -1,10 +1,16 @@
 "use strict";
 
+import {
+  WebhookEvent,
+  ReplyableEvent,
+  Message,
+  PostbackAction as TypesPostbackAction,
+} from "@line/bot-sdk";
 import { CHANNEL_ACCESS_TOKEN } from "./About";
 export { getSourceId, replyText, sendMessage };
 
-export class PostbackAction {
-  type = "postback";
+export class PostbackAction implements TypesPostbackAction {
+  type = "postback" as "postback";
   label;
   displayText;
   data;
@@ -15,51 +21,22 @@ export class PostbackAction {
   }
 }
 
-export namespace LineEvent {
-  export type All = Message | Postback | Follow | Join;
-
-  export interface Message extends Base {
-    type: "message";
-    message: { type: "text"; text: string };
-  }
-
-  export interface Postback extends Base {
-    type: "postback";
-    postback: { data: string; params?: { time?: string } };
-  }
-
-  export interface Follow extends Base {
-    type: "follow";
-  }
-
-  export interface Join extends Base {
-    type: "join";
-  }
-
-  interface Base {
-    webhookEventId: string;
-    deliveryContext: { isRedelivery: boolean };
-    timestamp: number;
-    source: Source<"user" | "group" | "room">;
-    replyToken: string;
-    mode: "active" | "standby";
-  }
-
-  type Source<Type> = { type: Type } & {
-    [Property in Type as `${string & Property}Id`]?: string;
-  } & { [index: string]: string };
-}
-
-function getSourceId(e: LineEvent.All) {
+function getSourceId(e: WebhookEvent) {
   const source = e.source;
-  const idKey = source.type + "Id";
 
-  if (!(idKey in source)) throw new Error("getSourceId fail");
+  if (!(source.type + "Id" in source)) throw new Error("getSourceId fail");
 
-  return source[idKey];
+  switch (source.type) {
+    case "user":
+      return source.userId;
+    case "group":
+      return source.groupId;
+    case "room":
+      return source.roomId;
+  }
 }
 
-function replyText(e: LineEvent.All, message: string) {
+function replyText(e: ReplyableEvent, message: string) {
   sendMessage("reply", e.replyToken, [
     {
       type: "text",
@@ -68,8 +45,12 @@ function replyText(e: LineEvent.All, message: string) {
   ]);
 }
 
-function sendMessage(type: "reply" | "push", target: string, messages: {}[]) {
-  const payload: Payload = {
+function sendMessage(
+  type: "reply" | "push",
+  target: string,
+  messages: Message[]
+) {
+  const payload: GoogleAppsScript.URL_Fetch.Payload = {
     messages,
   };
 
@@ -95,10 +76,4 @@ function sendMessage(type: "reply" | "push", target: string, messages: {}[]) {
   );
 
   console.log(`${response.getResponseCode()}: ${response.getContentText()}`);
-
-  interface Payload {
-    messages: {}[];
-    replyToken?: string;
-    to?: string;
-  }
 }

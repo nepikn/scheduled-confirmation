@@ -2,15 +2,10 @@
 
 export { parseProp, setScriptArray, setScriptObject };
 
-/**
- * 透過 Properties Service 取得屬性並解析
- */
+/** 透過 Properties Service 取得屬性並解析 */
 function parseProp(
   key: string,
-  getter:
-    | "getScriptProperties"
-    | "getScriptProperties"
-    | "getUserProperties" = "getScriptProperties"
+  getter: keyof typeof PropertiesService = "getScriptProperties"
 ) {
   const prop = PropertiesService[getter]().getProperty(key);
   if (prop == null) throw new Error("parseProp cannot get property" + key);
@@ -24,9 +19,7 @@ function parseProp(
   }
 }
 
-/**
- * 將指定值添加到 Script Properties 指定的 Array 當中
- */
+/** 將指定值添加到 Script Properties 指定的 Array 當中 */
 function setScriptArray(key: string, value: any, allowDuplicate = true) {
   const scriptProps = PropertiesService.getScriptProperties();
   let arr = parseProp(key);
@@ -39,9 +32,7 @@ function setScriptArray(key: string, value: any, allowDuplicate = true) {
   return arr;
 }
 
-/**
- * 將指定值添加到 Script Properties 指定的巢狀 Object 當中
- */
+/** 將指定值添加到 Script Properties 指定的巢狀 Object 當中 */
 function setScriptObject(keys: string[], value: any) {
   if (keys.length < 2) {
     throw new SyntaxError(

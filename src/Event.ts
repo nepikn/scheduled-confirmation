@@ -1,6 +1,6 @@
 "use strict";
 
-import { LineEvent } from "./LineHelpers";
+import { WebhookEvent, PostbackEvent, MessageEvent } from "@line/bot-sdk";
 import {
   replyText,
   sendMessage,
@@ -15,10 +15,10 @@ export { handlePostback };
  * When a program sends the app an HTTP POST request,
  * Apps Script runs the function doPost(e).
  */
-async function doPost(e: { postData: { contents: string } }) {
+async function doPost(e: GoogleAppsScript.Events.DoPost) {
   const postBody = JSON.parse(e.postData.contents);
 
-  postBody.events.forEach((event: LineEvent.All) => {
+  postBody.events.forEach((event: WebhookEvent) => {
     switch (event.type) {
       case "follow":
       case "join":
@@ -34,9 +34,9 @@ async function doPost(e: { postData: { contents: string } }) {
   });
 }
 
-function handleMessage(e: LineEvent.Message) {
+function handleMessage(e: MessageEvent) {
   // replyText(e, e.source.groupId);
-
+  if (!("text" in e.message)) return;
   if (e.message.text != "bot") return;
 
   sendMessage("reply", e.replyToken, [
@@ -66,18 +66,25 @@ function handleMessage(e: LineEvent.Message) {
   ]);
 }
 
-function handlePostback(e: LineEvent.Postback) {
+function handlePostback(e: PostbackEvent) {
   const data = e.postback.data;
   const sourceId = getSourceId(e);
   // replyText(e, JSON.stringify(e));
 
   switch (data) {
     case "sendConfirm":
-      sendConfirm(e);
+      sendConfirm(getSourceId(e));
       return;
 
     case "setTimeTrigger":
-      const time = e.postback.params!.time!;
+      if (!e.postback.params) return;
+      if (!("time" in e.postback.params)) return;
+      const time = e.postback.params.time;
+
+      if (!time) {
+        replyText(e, `設定未完成`);
+        return;
+      }
 
       TimeTrigger.remove(sourceId);
       new TimeTrigger(
